@@ -29,12 +29,12 @@ or out of storage the week before, and gas prices move on any surprise. This pro
 from weather before it is released, and tests every prediction honestly: each week is forecast using only
 data that existed before its release.</p>
 <div class=tiles>
-<div class=tile><div class=v>17 Bcf</div><div class=l>average weekly miss (Ridge regression)</div></div>
-<div class=tile><div class=v>42%</div><div class=l>smaller miss than the 5-year average (30 Bcf)</div></div>
-<div class=tile><div class=v>79%</div><div class=l>of weeks the direction of the surprise was called right</div></div>
-<div class=tile><div class=v>460</div><div class=l>weeks tested, Jan 2018 to Oct 2026</div></div>
+<div class=tile><div class=v>13 Bcf</div><div class=l>average weekly miss (Ridge regression)</div></div>
+<div class=tile><div class=v>58%</div><div class=l>smaller miss than the 5-year average (31 Bcf)</div></div>
+<div class=tile><div class=v>86%</div><div class=l>of weeks the direction of the surprise was called right</div></div>
+<div class=tile><div class=v>251</div><div class=l>untouched test weeks, Jan 2022 to Oct 2026</div></div>
 </div>
-<h2>Latest nowcast</h2><div class=now><p><b>Week ending Fri Oct 30, 2026: +85 Bcf</b> (80% range +71 to +111; 5-year average +70). EIA publishes it Thursday Nov 05 at 10:30 ET.</p><p style='color:var(--muted);margin:0'>Made before the release. Recent days use forecast weather, so the real range is a little wider.</p></div>
+<h2>Latest nowcast</h2><div class=now><p><b>Week ending Fri Oct 30, 2026: +83 Bcf</b> (80% range +77 to +107; 5-year average +70). EIA publishes it Thursday Nov 05 at 10:30 ET.</p><p><b>Week ending Fri Nov 06, 2026: +80 Bcf</b> (80% range +74 to +103; 5-year average +33). EIA publishes it Thursday Nov 12 at 10:30 ET.</p><p style='color:var(--muted);margin:0'>Made before the release. Recent days use forecast weather, so the real range is a little wider.</p></div>
 <h2>How it works</h2>
 <ul>
 <li><b>Weather:</b> daily temperatures for 17 US cities become weighted <i>heating degree days</i> (how cold) and
@@ -47,21 +47,21 @@ and gradient-boosted trees.</li>
 <li><b>Testing:</b> walk-forward. For each week since 2018, models are retrained on earlier weeks only.
 Automated tests check that no input can depend on the number being predicted.</li>
 </ul>
-<h2>Results</h2>
+<h2>Results, 2022 onward</h2><p class=lede style='font-size:1rem;margin-bottom:12px'>Scored only on years that played no part in choosing the model.</p>
 <div class=tablewrap><table><thead><tr><th>Method</th><th>Avg miss (Bcf)</th><th>Beats 5-yr avg</th>
-<th>Surprise direction right</th><th>80% range covered</th></tr></thead><tbody><tr><td>Weather-adjusted 5-yr avg</td><td>20.2</td><td>58%</td><td>75%</td><td>76%</td></tr><tr class=best><td>Ridge regression</td><td>17.4</td><td>62%</td><td>79%</td><td>76%</td></tr><tr><td>Gradient boosting</td><td>17.9</td><td>66%</td><td>80%</td><td>75%</td></tr><tr><td>5-year average</td><td>30.2</td><td>0%</td><td>–</td><td>78%</td></tr><tr><td>Same week last year</td><td>39.7</td><td>38%</td><td>51%</td><td>76%</td></tr><tr><td>Last week&#x27;s change</td><td>34.8</td><td>43%</td><td>64%</td><td>76%</td></tr></tbody></table></div>
+<th>Surprise direction right</th><th>80% range covered</th></tr></thead><tbody><tr><td>Weather-adjusted 5-yr avg</td><td>18.3</td><td>64%</td><td>80%</td><td>76%</td></tr><tr class=best><td>Ridge regression</td><td>13.1</td><td>73%</td><td>86%</td><td>80%</td></tr><tr><td>Gradient boosting</td><td>16.2</td><td>69%</td><td>82%</td><td>73%</td></tr><tr><td>5-year average</td><td>31.4</td><td>0%</td><td>–</td><td>76%</td></tr><tr><td>Same week last year</td><td>40.1</td><td>39%</td><td>53%</td><td>78%</td></tr><tr><td>Last week&#x27;s change</td><td>35.2</td><td>46%</td><td>65%</td><td>76%</td></tr></tbody></table></div>
 <h2>What I learned</h2>
 <ul>
-<li><b>Winter is where weather pays off.</b> In November–March the best model misses by 19 Bcf on average,
-against 49 Bcf for the 5-year average. Cold snaps cause most of the big swings, and they show up in the temperature data.</li>
-<li><b>Summer is harder.</b> In April–October the models barely beat the 5-year average. Summer storage depends more on
-things this model does not see yet: LNG exports, power-sector demand, production and pipeline flows.</li>
-<li><b>Simple beat fancy overall.</b> A ridge regression edged out gradient boosting for the whole year, though the
-trees did better in summer.</li>
+<li><b>Winter is where weather pays off.</b> In November–March the best model misses by 15 Bcf on average,
+against 54 Bcf for the 5-year average. Cold snaps cause most of the big swings, and they show up in the temperature data.</li>
+<li><b>Summer improved the most.</b> In April–October it misses by 12 Bcf against 17 for the 5-year average. Summer was the weak spot of the first version; last week's weather, curvature for extreme heat and season-aware weather effects closed most of the gap.</li>
+<li><b>Honest testing.</b> Every model and feature choice was made looking only at 2018-2021. The numbers above are
+for 2022 onward, which played no part in those choices, so they are a fair estimate of live performance.</li>
+<li><b>Simple beat fancy.</b> A ridge regression beat gradient-boosted trees, both on the years used to choose it and on the later years.</li>
 <li><b>The misses are informative.</b> Weeks the weather cannot explain point to real events.
 The largest was February 2021, Winter Storm Uri, when freezing wells cut production and storage fell far more than cold alone implied.</li>
 </ul>
-<h2>Weeks the weather couldn't explain</h2><ul><li><b>Feb 19, 2021</b>: EIA -338 Bcf vs model -257 (5-yr avg -128).</li><li><b>Jun 11, 2021</b>: EIA +16 Bcf vs model +89 (5-yr avg +89).</li><li><b>Sep 30, 2022</b>: EIA +129 Bcf vs model +66 (5-yr avg +89).</li><li><b>Jan 06, 2023</b>: EIA +11 Bcf vs model -57 (5-yr avg -161).</li><li><b>Jan 19, 2024</b>: EIA -326 Bcf vs model -269 (5-yr avg -138).</li><li><b>Jan 10, 2025</b>: EIA -258 Bcf vs model -206 (5-yr avg -132).</li></ul>
+<h2>Weeks the weather couldn't explain</h2><ul><li><b>Feb 19, 2021</b>: EIA -338 Bcf vs model -268 (5-yr avg -128).</li><li><b>Jun 11, 2021</b>: EIA +16 Bcf vs model +84 (5-yr avg +89).</li><li><b>Dec 30, 2022</b>: EIA -221 Bcf vs model -170 (5-yr avg -89).</li><li><b>Jan 06, 2023</b>: EIA +11 Bcf vs model -52 (5-yr avg -161).</li><li><b>Oct 13, 2023</b>: EIA +97 Bcf vs model +55 (5-yr avg +87).</li><li><b>Jan 05, 2024</b>: EIA -140 Bcf vs model -98 (5-yr avg -87).</li><li><b>Feb 02, 2024</b>: EIA -75 Bcf vs model -119 (5-yr avg -197).</li></ul>
 <figure><h3>Forecast vs actual, last two years</h3><img src='img/forecast_vs_actual.png' alt='Forecast vs actual, last two years' loading=lazy><figcaption>Each blue point was predicted before EIA released the number. Black dots are what EIA reported.</figcaption></figure><figure><h3>Weather drives the number</h3><img src='img/weather_vs_storage.png' alt='Weather drives the number' loading=lazy><figcaption>Colder winter weeks mean bigger withdrawals; hotter summer weeks mean smaller injections.</figcaption></figure><figure><h3>How far off each method is</h3><img src='img/error_by_model.png' alt='How far off each method is' loading=lazy><figcaption>Average weekly miss in Bcf, winter vs summer. Lower is better.</figcaption></figure><figure><h3>Is it getting worse over time?</h3><img src='img/error_over_time.png' alt='Is it getting worse over time?' loading=lazy><figcaption>Average miss over the previous 26 weeks, for the best model and the 5-year average.</figcaption></figure>
 <footer>Data: EIA weekly working gas in storage (Lower 48) and Open-Meteo temperature archive.
 Built with Python, pandas and scikit-learn · <a href='https://github.com/HughFOD/gas-storage-nowcast'>Code on GitHub</a>.</footer>
