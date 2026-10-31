@@ -1,0 +1,47 @@
+name: Daily nowcast update
+
+# Every day after EIA's 10:30 ET storage report: download the latest storage numbers and
+# weather, rerun the walk-forward test and the nowcast, rebuild the website and publish it.
+on:
+  schedule:
+    - cron: "7 16 * * *"      # 16:07 UTC = 12:07 PM New York time in summer, 11:07 AM in winter
+  workflow_dispatch:           # also lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nowcast
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run the tests
+        run: python -m pytest -q
+      - name: Reuse downloaded weather
+        uses: actions/cache@v4
+        with:
+          path: data/raw/weather_daily.csv
+          key: weather-${{ github.run_id }}
+          restore-keys: weather-
+      - name: Download data and rerun the analysis
+        run: python run.py analyze --fresh-storage
+      - name: Rebuild the website
+        run: python -c "from gasstore import website; print(website.build())"
+      - name: Publish
+        run: |
+          git config user.name "nowcast-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f docs output/real data/raw/storage.csv
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Nowcast update $(date -u +%Y-%m-%d)"
+          git push
