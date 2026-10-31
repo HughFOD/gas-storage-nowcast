@@ -1,0 +1,9 @@
+numpy
+pandas>=2.0
+scikit-learn>=1.4
+matplotlib
+requests
+xlrd>=2.0
+openpyxl
+tabulate
+pytest
