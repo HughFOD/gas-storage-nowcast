@@ -15,14 +15,16 @@ from . import config
 REPO_URL = "https://github.com/HughFOD/gas-storage-nowcast"
 
 CHARTS = [
-    ("forecast_vs_actual.png", "Forecast vs actual, last two years",
-     "Each blue point was predicted before EIA released the number. Black dots are what EIA reported."),
-    ("weather_vs_storage.png", "Weather drives the number",
-     "Colder winter weeks mean bigger withdrawals; hotter summer weeks mean smaller injections."),
-    ("error_by_model.png", "How far off each method is",
-     "Average weekly miss in Bcf, winter vs summer. Lower is better."),
-    ("error_over_time.png", "Is it getting worse over time?",
-     "Average miss over the previous 26 weeks, for the best model and the 5-year average."),
+    ("forecast_vs_actual.png", "Predictions vs. what EIA reported, last two years",
+     "Blue line: the model's prediction, made before each report came out. Black dots: the real number. "
+     "Grey dashes: the standard guess (5-year average). Above zero means gas was added to storage; below zero, taken out."),
+    ("weather_vs_storage.png", "Cold weeks drain storage; hot weeks slow the refill",
+     "Left: in winter, the colder the week, the more gas comes out of storage. Right: in summer, hot weeks mean "
+     "more gas burned for air conditioning, so less goes into storage."),
+    ("error_by_model.png", "Typical miss for each method, winter vs. summer",
+     "Shorter bars are better. Winter is where the standard guess struggles most."),
+    ("error_over_time.png", "Typical miss over time",
+     "Each point is the average miss over the previous 26 weeks. The model stays well below the standard guess."),
 ]
 
 CSS = """
@@ -41,9 +43,11 @@ h1{font-size:2rem;line-height:1.2;margin:0 0 8px}h2{font-size:1.3rem;margin:48px
 figure{margin:24px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
 figure img{width:100%;height:auto;display:block}figcaption{color:#5f6b76;font-size:.9rem;margin-top:6px}
 figure h3{margin:0 0 6px;font-size:1rem;color:#1d2329}
+.muted{color:var(--muted)}.big{font-size:2rem;font-weight:700;color:var(--warm);line-height:1.2;margin-bottom:6px}
+ol{padding-left:22px}ol li{margin:8px 0}
 .tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}th{white-space:normal;vertical-align:bottom}th{color:var(--muted);font-weight:600}
 tr.best td{font-weight:650}ul{padding-left:20px}li{margin:6px 0}
 footer{margin-top:56px;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);padding-top:16px}
 a{color:var(--accent)}
@@ -76,87 +80,108 @@ def build(src=None, dest=None) -> str:
     first, last = pred["week_ending"].min(), pred["week_ending"].max()
     hold_from = pd.Timestamp(info.get("holdout_from", config.HOLDOUT_START))
     chosen_on = info.get("chosen_on", f"{first:%Y}-{hold_from.year - 1}")
-    summer_head = "Summer improved the most." if sum_b < 0.85 * sum_a else "Summer is harder."
-    summer = (f"In April–October it misses by {sum_b:.0f} Bcf against {sum_a:.0f} for the 5-year average. "
-              "Summer was the weak spot of the first version; last week's weather, curvature for extreme heat "
-              "and season-aware weather effects closed most of the gap." if sum_b < 0.85 * sum_a else
-              f"In April–October it misses by {sum_b:.0f} Bcf against {sum_a:.0f} for the 5-year average. "
-              "Summer storage depends on things this model does not see yet: LNG exports, power demand, production.")
+    summer_head = "Summer is harder to beat."
+    summer = (f"From April to October the model misses by {sum_b:.0f} Bcf; the standard guess misses by {sum_a:.0f}. "
+              "Summer weeks swing less, so the standard guess is already closer, and summer storage also depends on "
+              "things the model doesn't see, like gas exports and power-plant demand.")
 
     for f, *_ in CHARTS:
         shutil.copy(src / f, dest / "img" / f)
 
+    plain = {"5-year average": "Standard guess (5-year average)",
+             "Weather-adjusted 5-yr avg": "5-year average, adjusted for weather",
+             "Gradient boosting": "Gradient-boosted trees", "Ridge regression": "Ridge regression",
+             "Same week last year": "Same week last year", "Last week's change": "Same as last week"}
+    plain[best] = f"My model ({best.lower()})"
     rows = "".join(
-        f"<tr{' class=best' if name == best else ''}><td>{html.escape(name)}</td>"
+        f"<tr{' class=best' if name == best else ''}><td>{html.escape(plain.get(name, name))}</td>"
         f"<td>{_fmt(r['MAE (Bcf)'])}</td><td>{_fmt(r['beats 5-yr avg (% of weeks)'], 0)}%</td>"
         f"<td>{_fmt(r['surprise direction right (%)'], 0)}{'%' if pd.notna(r['surprise direction right (%)']) else ''}</td>"
         f"<td>{_fmt(r['80% range covered (%)'], 0)}%</td></tr>"
-        for name, r in a.iterrows())
+        for name, r in pd.concat([a.loc[[best]], a.drop(index=best)]).iterrows())
 
     now_html = ""
     if now is not None and not now.empty:
         items = []
         for wk, g in now.groupby("week_ending"):
             r = g[g["model"] == best].iloc[0]
-            items.append(f"<p><b>Week ending {wk:%a %b %d, %Y}: {r['pred']:+.0f} Bcf</b> "
-                         f"(80% range {r['lower']:+.0f} to {r['upper']:+.0f}; 5-year average {r['avg5']:+.0f}). "
-                         f"EIA publishes it {wk + pd.Timedelta(days=6):%A %b %d} at 10:30 ET.</p>")
-        now_html = ("<h2>Latest nowcast</h2><div class=now>" + "".join(items) +
-                    "<p style='color:var(--muted);margin:0'>Made before the release. Recent days use forecast "
-                    "weather, so the real range is a little wider.</p></div>")
+            verb = "added to" if r["pred"] >= 0 else "taken out of"
+            items.append(
+                f"<div class=big>{abs(r['pred']):.0f} Bcf {verb} storage</div>"
+                f"<p>Prediction for the week ending <b>{wk:%A, %B %-d}</b>. EIA publishes the real number on "
+                f"<b>{wk + pd.Timedelta(days=6):%A, %B %-d} at 10:30 a.m. ET</b>.</p>"
+                f"<p class=muted>Likely range: {r['lower']:+.0f} to {r['upper']:+.0f} Bcf. "
+                f"The standard guess (5-year average) is {r['avg5']:+.0f} Bcf.</p>")
+        now_html = ("<h2>This week's prediction</h2><div class=now>" + "".join(items) +
+                    "<p class=muted style='margin:0'>Some of the week's weather is still a forecast, "
+                    "so the real range is a little wider.</p></div>")
 
-    flagged = "".join(f"<li><b>{r['week_ending']:%b %d, %Y}</b>: {html.escape(r['detail'].split('. Weather')[0])}.</li>"
+    flagged = "".join(f"<li><b>Week ending {r['week_ending']:%b %-d, %Y}</b>: EIA reported {r['detail'].split(' Bcf vs model ')[0].replace('EIA ', '')} Bcf; "
+                      f"the model predicted {r['detail'].split(' Bcf vs model ')[1].split(' (')[0]} Bcf.</li>"
                       for _, r in q[q["check"] == "unexplained change"].iterrows())
 
-    figs = "".join(f"<figure><h3>{t}</h3><img src='img/{f}' alt='{html.escape(t)}' loading=lazy>"
+    figs = "".join(f"<figure><img src='img/{f}' alt='{html.escape(t)}' loading=lazy>"
                    f"<figcaption>{c}</figcaption></figure>" for f, t, c in CHARTS)
     repo = f" · <a href='{REPO_URL}'>Code on GitHub</a>" if REPO_URL else ""
 
     page = f"""<!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>Gas Storage Nowcast</title><style>{CSS}</style></head><body><main>
-<h1>Predicting the weekly natural gas storage report</h1>
-<p class=lede>Every Thursday the US Energy Information Administration reports how much natural gas went into
-or out of storage the week before, and gas prices move on any surprise. This project predicts that number
-from weather before it is released, and tests every prediction honestly: each week is forecast using only
-data that existed before its release.</p>
-<div class=tiles>
-<div class=tile><div class=v>{b['MAE (Bcf)']:.0f} Bcf</div><div class=l>average weekly miss ({html.escape(best)})</div></div>
-<div class=tile><div class=v>{100 * (1 - b['MAE (Bcf)'] / avg['MAE (Bcf)']):.0f}%</div><div class=l>smaller miss than the 5-year average ({avg['MAE (Bcf)']:.0f} Bcf)</div></div>
-<div class=tile><div class=v>{b['surprise direction right (%)']:.0f}%</div><div class=l>of weeks the direction of the surprise was called right</div></div>
-<div class=tile><div class=v>{int(b['weeks'])}</div><div class=l>untouched test weeks, {hold_from:%b %Y} to {last:%b %Y}</div></div>
-</div>
+<title>Gas Storage Predictions</title><style>{CSS}</style></head><body><main>
+<h1>Predicting the weekly US natural gas storage number</h1>
+<p class=lede>Every Thursday, the US Energy Information Administration (EIA) reports how much natural gas was
+added to or taken out of underground storage the week before. Gas prices jump when the number surprises traders.
+This project predicts the number from the weather before EIA publishes it.</p>
+<p class=muted><b>Bcf</b> = billion cubic feet of gas. A positive number means gas was added to storage (usually spring
+to autumn); a negative number means gas was taken out (usually winter). The <b>standard guess</b> is the average for
+the same week over the past five years: the number every storage report is compared with.</p>
 {now_html}
+<h2>How accurate is it?</h2>
+<div class=tiles>
+<div class=tile><div class=v>{b['MAE (Bcf)']:.0f} Bcf</div><div class=l>typical miss each week</div></div>
+<div class=tile><div class=v>{avg['MAE (Bcf)']:.0f} Bcf</div><div class=l>typical miss of the standard guess</div></div>
+<div class=tile><div class=v>{b['surprise direction right (%)']:.0f}%</div><div class=l>of weeks it correctly said whether the real number would beat the standard guess</div></div>
+<div class=tile><div class=v>{int(b['weeks'])}</div><div class=l>weeks tested ({hold_from:%Y} to {last:%Y}), none used to build the model</div></div>
+</div>
+<p class=muted>Every prediction was made using only data available before that week's report. The model was designed
+using {chosen_on} only, and the scores above come from {hold_from:%Y} onward, so they show how it does on weeks it has never seen.</p>
+
 <h2>How it works</h2>
+<ol>
+<li><b>Measure the weather.</b> Daily temperatures from 17 US cities show how cold or hot each week was. Cold weeks
+count most in the gas-heated North-East and Midwest; hot weeks count most in Texas, the South and California, where
+power plants burn gas for air conditioning.</li>
+<li><b>Start from the standard guess.</b> The average for the same week over the past five years.</li>
+<li><b>Adjust for the weather.</b> A model learns how much colder or hotter than normal weather moves storage away
+from the standard guess, using every past week.</li>
+<li><b>Test it fairly.</b> Each week is predicted using only earlier data, as if it were that Thursday morning.</li>
+</ol>
+
+<h2>Every method compared</h2>
+<p class=muted>Weeks from {hold_from:%Y} onward. "Typical miss" is the average gap between the prediction and the real number.
+"Beat the standard guess" is the share of weeks it was closer than the 5-year average. "Higher or lower right" is how often it
+correctly said whether the real number would come in above or below the standard guess. "Inside likely range" should be about 80%.</p>
+<div class=tablewrap><table><thead><tr><th>Method</th><th>Typical miss (Bcf)</th><th>Beat the standard guess</th>
+<th>Higher or lower right</th><th>Inside likely range</th></tr></thead><tbody>{rows}</tbody></table></div>
+
+<h2>What I found</h2>
 <ul>
-<li><b>Weather:</b> daily temperatures for 17 US cities become weighted <i>heating degree days</i> (how cold) and
-<i>cooling degree days</i> (how hot) for each Saturday–Friday storage week. Heating weights lean to the gas-heated
-North-East and Midwest; cooling weights lean to Texas, the South and California, where gas power plants run air conditioning.</li>
-<li><b>Benchmarks:</b> the 5-year average for that week (the number every storage report is compared with),
-last year's number, and last week's number.</li>
-<li><b>Models:</b> a weather-adjusted 5-year average that learns only from the last 3 years, a ridge regression,
-and gradient-boosted trees.</li>
-<li><b>Testing:</b> walk-forward. For each week since {first:%Y}, models are retrained on earlier weeks only.
-Automated tests check that no input can depend on the number being predicted.</li>
-</ul>
-<h2>Results, {hold_from:%Y} onward</h2><p class=lede style='font-size:1rem;margin-bottom:12px'>Scored only on years that played no part in choosing the model.</p>
-<div class=tablewrap><table><thead><tr><th>Method</th><th>Avg miss (Bcf)</th><th>Beats 5-yr avg</th>
-<th>Surprise direction right</th><th>80% range covered</th></tr></thead><tbody>{rows}</tbody></table></div>
-<h2>What I learned</h2>
-<ul>
-<li><b>Winter is where weather pays off.</b> In November–March the best model misses by {win_b:.0f} Bcf on average,
-against {win_a:.0f} Bcf for the 5-year average. Cold snaps cause most of the big swings, and they show up in the temperature data.</li>
+<li><b>Winter is where weather matters most.</b> From November to March the model misses by {win_b:.0f} Bcf on average;
+the standard guess misses by {win_a:.0f}. Cold snaps cause the big swings, and the temperature data catches them.</li>
 <li><b>{summer_head}</b> {summer}</li>
-<li><b>Honest testing.</b> Every model and feature choice was made looking only at {chosen_on}. The numbers above are
-for {hold_from:%Y} onward, which played no part in those choices, so they are a fair estimate of live performance.</li>
-<li><b>Simple beat fancy.</b> A ridge regression beat gradient-boosted trees, both on the years used to choose it and on the later years.</li>
-<li><b>The misses are informative.</b> Weeks the weather cannot explain point to real events.
-The largest was February 2021, Winter Storm Uri, when freezing wells cut production and storage fell far more than cold alone implied.</li>
+<li><b>Simple beat fancy.</b> A straightforward linear model (ridge regression) beat a more complex one (gradient-boosted trees).</li>
+<li><b>Big misses point to real events.</b> The largest was February 2021, Winter Storm Uri: frozen gas wells cut
+supply, so storage fell much further than the cold alone would suggest.</li>
 </ul>
-<h2>Weeks the weather couldn't explain</h2><ul>{flagged}</ul>
+
+<h2>Weeks the weather couldn't explain</h2>
+<p class=muted>Weeks where the model missed far more than usual. These usually come from events the weather can't
+show, like frozen wells, pipeline outages, or EIA reclassifying gas.</p>
+<ul>{flagged}</ul>
+
+<h2>Charts</h2>
 {figs}
-<footer>Data: EIA weekly working gas in storage (Lower 48) and Open-Meteo temperature archive.
-Built with Python, pandas and scikit-learn{repo}.</footer>
+<footer>Updated automatically every day after EIA's report. Data: EIA weekly working gas in storage (Lower 48 states)
+and Open-Meteo temperatures. Built with Python, pandas and scikit-learn{repo}.</footer>
 </main></body></html>"""
     (dest / "index.html").write_text(page)
     return str(dest / "index.html")

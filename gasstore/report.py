@@ -14,6 +14,8 @@ from . import config  # noqa: E402
 from .models import BENCHMARKS, MODELS  # noqa: E402
 
 MODEL_NAMES = [M.name for M in MODELS]
+PLAIN = {"5-year average": "Standard guess (5-yr avg)", "Weather-adjusted 5-yr avg": "5-yr avg, weather-adjusted",
+         "Last week's change": "Same as last week"}
 
 
 def score(g: pd.DataFrame) -> dict:
@@ -80,27 +82,27 @@ def charts(df, pred, m, best, out: Path):
     g = pred[pred["model"] == best].sort_values("week_ending")
     g = g[g["week_ending"] >= g["week_ending"].max() - pd.DateOffset(years=2)]
     fig, ax = plt.subplots(figsize=(10, 4.2))
-    ax.fill_between(g["week_ending"], g["lower"], g["upper"], color=blue, alpha=0.15, label="80% range")
-    ax.plot(g["week_ending"], g["avg5"], color=grey, lw=1.3, ls="--", label="5-year average")
-    ax.plot(g["week_ending"], g["pred"], color=blue, lw=1.6, label=f"{best} (made before release)")
-    ax.scatter(g["week_ending"], g["actual"], s=10, color="black", zorder=3, label="EIA actual")
+    ax.fill_between(g["week_ending"], g["lower"], g["upper"], color=blue, alpha=0.15, label="Likely range")
+    ax.plot(g["week_ending"], g["avg5"], color=grey, lw=1.3, ls="--", label="Standard guess (5-year average)")
+    ax.plot(g["week_ending"], g["pred"], color=blue, lw=1.6, label="Model prediction (made before the report)")
+    ax.scatter(g["week_ending"], g["actual"], s=10, color="black", zorder=3, label="What EIA reported")
     ax.axhline(0, color="black", lw=0.5)
-    ax.set_ylabel("Weekly storage change (Bcf)")
-    ax.set_title("Weekly storage change: forecast vs actual, last two years")
+    ax.set_ylabel("Gas added (+) or taken out (−), Bcf")
+    ax.set_title("Predictions vs. what EIA reported, last two years")
     ax.legend(frameon=False, fontsize=8, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.08))
     _save(fig, out / "forecast_vs_actual.png")
 
     # 2. Weather drives the number.
     lab = df[df["change_bcf"].notna() & df["hdd"].notna()]
     fig, axes = plt.subplots(1, 2, figsize=(10, 4))
-    for ax, col, name in [(axes[0], "hdd", "Heating degree days (week)"),
-                          (axes[1], "cdd", "Cooling degree days (week)")]:
+    for ax, col, name in [(axes[0], "hdd", "How cold the week was (heating degree days)"),
+                          (axes[1], "cdd", "How hot the week was (cooling degree days)")]:
         sub = lab[lab["season"] == ("withdrawal" if col == "hdd" else "injection")]
         sc = ax.scatter(sub[col], sub["change_bcf"], c=sub["week_ending"].dt.year, s=8, cmap="viridis")
         ax.set_xlabel(name)
-        ax.set_ylabel("Storage change (Bcf)")
-    axes[0].set_title("Winter: colder week, bigger withdrawal")
-    axes[1].set_title("Summer: hotter week, smaller injection")
+        ax.set_ylabel("Gas added (+) or taken out (−), Bcf")
+    axes[0].set_title("Winter: colder weeks take more gas out")
+    axes[1].set_title("Summer: hotter weeks put less gas in")
     fig.colorbar(sc, ax=axes, label="Year", fraction=0.03)
     fig.savefig(out / "weather_vs_storage.png", dpi=130, bbox_inches="tight")
     plt.close(fig)
@@ -112,21 +114,22 @@ def charts(df, pred, m, best, out: Path):
     y = np.arange(len(mm))
     ax.barh(y - 0.2, mm["withdrawal"], height=0.4, color=blue, label="Winter (Nov-Mar)")
     ax.barh(y + 0.2, mm["injection"], height=0.4, color=orange, label="Summer (Apr-Oct)")
-    ax.set_yticks(y, mm.index)
+    ax.set_yticks(y, [PLAIN.get(n, n) for n in mm.index])
     ax.invert_yaxis()
-    ax.set_xlabel("Average miss (Bcf), lower is better")
-    ax.set_title("How far off each method is, by season")
+    ax.set_xlabel("Typical miss (Bcf), shorter is better")
+    ax.set_title("Typical miss for each method")
     ax.legend(frameon=False)
     _save(fig, out / "error_by_model.png")
 
     # 4. Errors over time: is the model drifting?
     fig, ax = plt.subplots(figsize=(10, 3.6))
     for name, color in [(best, blue), ("5-year average", grey)]:
+        label = "Model" if name == best else "Standard guess (5-year average)"
         e = pred[pred["model"] == name].sort_values("week_ending")
         ax.plot(e["week_ending"], (e["pred"] - e["actual"]).abs().rolling(26, min_periods=8).mean(),
-                color=color, lw=1.6, label=name)
-    ax.set_ylabel("Average miss, last 26 weeks (Bcf)")
-    ax.set_title("Is the forecast getting worse over time?")
+                color=color, lw=1.6, label=label)
+    ax.set_ylabel("Typical miss, past 26 weeks (Bcf)")
+    ax.set_title("Typical miss over time")
     ax.legend(frameon=False)
     _save(fig, out / "error_over_time.png")
 
