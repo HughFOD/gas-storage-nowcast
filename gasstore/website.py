@@ -103,7 +103,8 @@ def build(src=None, dest=None) -> str:
     now_html = ""
     if now is not None and not now.empty:
         items = []
-        for wk, g in now.groupby("week_ending"):
+        # Only the next report EIA will publish. Later weeks rest entirely on weather forecasts.
+        for wk, g in list(now.groupby("week_ending"))[:1]:
             r = g[g["model"] == best].iloc[0]
             verb = "added to" if r["pred"] >= 0 else "taken out of"
             items.append(
