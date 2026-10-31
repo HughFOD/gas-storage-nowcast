@@ -45,6 +45,8 @@ figure img{width:100%;height:auto;display:block}figcaption{color:#5f6b76;font-si
 figure h3{margin:0 0 6px;font-size:1rem;color:#1d2329}
 .muted{color:var(--muted)}.big{font-size:2rem;font-weight:700;color:var(--warm);line-height:1.2;margin-bottom:6px}
 ol{padding-left:22px}ol li{margin:8px 0}
+.explain{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 20px;margin:0 0 8px}
+.explain h3{margin:0 0 4px;font-size:1.05rem}.explain ul{margin:0}
 .tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}th{white-space:normal;vertical-align:bottom}th{color:var(--muted);font-weight:600}
@@ -78,6 +80,8 @@ def build(src=None, dest=None) -> str:
     win_b, win_a = s.loc[(best, "withdrawal"), "MAE (Bcf)"], s.loc[("5-year average", "withdrawal"), "MAE (Bcf)"]
     sum_b, sum_a = s.loc[(best, "injection"), "MAE (Bcf)"], s.loc[("5-year average", "injection"), "MAE (Bcf)"]
     first, last = pred["week_ending"].min(), pred["week_ending"].max()
+    wf = pd.read_csv(src / "weekly_features.csv", usecols=["week_ending", "storage_bcf"], parse_dates=["week_ending"]).dropna()
+    level, level_week = wf["storage_bcf"].iloc[-1], wf["week_ending"].iloc[-1]
     hold_from = pd.Timestamp(info.get("holdout_from", config.HOLDOUT_START))
     chosen_on = info.get("chosen_on", f"{first:%Y}-{hold_from.year - 1}")
     summer_head = "Summer is harder to beat."
@@ -132,9 +136,14 @@ def build(src=None, dest=None) -> str:
 <p class=lede>Every Thursday, the US Energy Information Administration (EIA) reports how much natural gas was
 added to or taken out of underground storage the week before. Gas prices jump when the number surprises traders.
 This project predicts the number from the weather before EIA publishes it.</p>
-<p class=muted><b>Bcf</b> = billion cubic feet of gas. A positive number means gas was added to storage (usually spring
-to autumn); a negative number means gas was taken out (usually winter). The <b>standard guess</b> is the average for
-the same week over the past five years: the number every storage report is compared with.</p>
+<div class=explain><h3>What the numbers mean</h3><ul>
+<li><b>Bcf</b> means <b>billion cubic feet</b> of natural gas. One Bcf is enough to heat about 15,000 US homes for a year.
+The whole country uses about 90 Bcf a day.</li>
+<li>US underground storage holds about <b>{level:,.0f} Bcf</b> right now (week ending {level_week:%B %-d}).</li>
+<li><b>Positive numbers</b> mean gas was <b>added</b> to storage, usually April to October: a normal week is +50 to +100 Bcf.
+<b>Negative numbers</b> mean gas was <b>taken out</b>, usually in winter: a cold week can be −200 Bcf or more.</li>
+<li>The <b>standard guess</b> is the average change for the same week over the past five years. It's the number every storage report is compared with.</li>
+</ul></div>
 {now_html}
 <h2>How accurate is it?</h2>
 <div class=tiles>
