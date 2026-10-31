@@ -29,6 +29,7 @@ def tmp_data(tmp_path, monkeypatch):
 
 def test_weather_download_merges_archive_and_forecast(tmp_data, monkeypatch):
     monkeypatch.setattr(config, "WEATHER_START", "2024-01-01")
+    monkeypatch.setattr(config, "ARCHIVE_PAUSE", 0)
     calls = []
 
     def fake_get(url, params, timeout):
@@ -78,3 +79,14 @@ def test_storage_api_fallback(tmp_data, monkeypatch):
     monkeypatch.setenv("EIA_API_KEY", "x")
     df = storage.fetch_storage()
     assert list(df["storage_bcf"]) == [3000, 2900]
+
+
+def test_storage_keeps_last_copy_if_download_fails(tmp_data, monkeypatch):
+    def boom(*a, **k):
+        raise requests.ConnectionError("EIA down")
+
+    monkeypatch.setattr(requests, "get", boom)
+    monkeypatch.delenv("EIA_API_KEY", raising=False)
+    (tmp_data / "raw").mkdir()
+    pd.DataFrame({"week_ending": ["2020-01-03"], "storage_bcf": [3000]}).to_csv(tmp_data / "raw" / "storage.csv", index=False)
+    assert list(storage.fetch_storage(refresh=True)["storage_bcf"]) == [3000]
