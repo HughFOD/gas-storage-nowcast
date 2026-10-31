@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.pytest_cache/
+data/raw/
+output/
+eia_key.txt
+.idea/
+.DS_Store

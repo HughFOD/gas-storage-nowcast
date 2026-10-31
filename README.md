@@ -34,26 +34,27 @@ Scores reported for each method: average miss (Bcf), how often it beats the 5-ye
 
 ## Findings
 
-Walk-forward test, January 2018 to October 2026 (460 weeks):
+**How the test was kept honest.** Every forecast is walk-forward: to predict a week, the models are trained only on earlier weeks. On top of that, every modelling choice (which features, which model) was made looking only at 2018-2021. The numbers below are for **2022 to October 2026 (251 weeks)**, which played no part in those choices.
 
 | Method | Avg miss (Bcf) | Winter miss | Summer miss | Surprise direction right |
 |---|---:|---:|---:|---:|
-| **Ridge regression** | **17.4** | **18.8** | 16.5 | 79% |
-| Gradient boosting | 17.9 | 22.9 | **14.5** | 80% |
-| Weather-adjusted 5-yr avg | 20.2 | 24.0 | 17.6 | 75% |
-| 5-year average | 30.2 | 49.1 | 17.3 | – |
-| Last week's change | 34.8 | 58.1 | 18.9 | 64% |
-| Same week last year | 39.7 | 64.4 | 22.9 | 51% |
+| **Ridge regression** | **13.1** | **15.4** | **11.6** | **86%** |
+| Gradient boosting | 16.2 | 20.9 | 13.1 | 83% |
+| Weather-adjusted 5-yr avg | 18.3 | 21.1 | 16.4 | 80% |
+| 5-year average | 31.4 | 53.9 | 16.7 | – |
+| Last week's change | 35.2 | 61.1 | 18.4 | 65% |
+| Same week last year | 40.1 | 70.2 | 20.6 | 53% |
 
-- **The best model's average miss is 42% smaller than the 5-year average's** (17 vs 30 Bcf), and it calls whether the report will come in above or below the 5-year average correctly 79% of the time.
-- **Winter is where weather pays off:** a 19 Bcf average miss vs 49 for the 5-year average. Cold snaps cause most of the big swings, and they show up in temperature data.
-- **Summer is harder:** the models barely beat the 5-year average. Summer storage depends more on things not in the model yet (LNG exports, power-sector demand, production), which is the obvious next step.
-- **Simple beat fancy overall.** Ridge regression edged out gradient boosting for the year, though the trees were better in summer.
-- **It has improved over time:** ridge's average miss fell from about 21 Bcf in 2018 to 13 Bcf in 2026 so far, as more training years accumulated.
-- **The 80% ranges are honest:** they contained the real number 76% of the time.
-- **Misses point to real events.** The largest was February 2021 (Winter Storm Uri): EIA reported −338 Bcf vs the model's −257, because freezing wells cut production on top of the cold. Six such weeks are listed in `quality.csv`.
+- **The best model's average miss is 58% smaller than the 5-year average's** (13 vs 31 Bcf), and it calls whether the report comes in above or below the 5-year average correctly 86% of the time.
+- **Winter is where weather pays off most:** 15 Bcf vs 54 for the 5-year average. Cold snaps cause the big swings, and they show up in temperature data.
+- **Summer was the first version's weak spot** (it barely beat the 5-year average). Adding last week's weather, curvature for extreme cold and heat, and season-aware weather effects brought the summer miss to 12 Bcf vs 17.
+- **Simple beat fancy.** Ridge regression beat gradient-boosted trees on both the years used to choose it and the later years.
+- **The 80% ranges are honest:** they contained the real number 80% of the time.
+- **Misses point to real events.** The largest was February 2021 (Winter Storm Uri): EIA reported −338 Bcf vs the model's −257, because freezing wells cut production on top of the cold. Such weeks are listed in `quality.csv`.
 
-**Live test:** the week ending Oct 30, 2026 was forecast at **+85 Bcf** (80% range +71 to +111; 5-year average +70) before EIA's release on Nov 5. *Add the actual number here once it's out.*
+The website updates itself every day after EIA's release (see `.github/workflows/update.yml`), so its numbers and the latest nowcast stay current.
+
+**Live test:** the week ending Oct 30, 2026 was forecast before EIA's Nov 5 release at about **+83 Bcf** (5-year average +70). *Add the actual number here once it's out.*
 
 Project website: **https://hughfod.github.io/gas-storage-nowcast/**
 
@@ -68,6 +69,8 @@ The real test is beating the analyst survey published by news outlets each Wedne
 3. `step3_run_real_data.py`: downloads real data and makes this week's nowcast. Re-run weekly.
 4. `step4_run_tests.py`: runs the automated checks.
 5. `step5_build_website.py`: rebuilds the website in `docs/` from the latest results.
+
+On GitHub, a scheduled workflow runs step 3 and step 5 every day and publishes the result.
 
 Results go to `output/real/`: `summary.md`, `nowcast.csv`, `metrics.csv`, `predictions.csv`, `quality.csv`, and charts.
 
