@@ -1,6 +1,6 @@
 <!doctype html><html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
-<title>Gas Storage Nowcast</title><style>
+<title>Gas Storage Predictions</title><style>
 :root{--bg:#fafaf8;--card:#fff;--ink:#1d2329;--muted:#5f6b76;--line:#e3e6e9;--accent:#2a6fdb;--warm:#e07b39}
 @media (prefers-color-scheme:dark){:root{--bg:#14171a;--card:#1c2024;--ink:#e8eaec;--muted:#9aa5af;--line:#2e343a;--accent:#6ea0f0;--warm:#f09a5e}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
@@ -16,53 +16,68 @@ h1{font-size:2rem;line-height:1.2;margin:0 0 8px}h2{font-size:1.3rem;margin:48px
 figure{margin:24px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
 figure img{width:100%;height:auto;display:block}figcaption{color:#5f6b76;font-size:.9rem;margin-top:6px}
 figure h3{margin:0 0 6px;font-size:1rem;color:#1d2329}
+.muted{color:var(--muted)}.big{font-size:2rem;font-weight:700;color:var(--warm);line-height:1.2;margin-bottom:6px}
+ol{padding-left:22px}ol li{margin:8px 0}
 .tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}th{white-space:normal;vertical-align:bottom}th{color:var(--muted);font-weight:600}
 tr.best td{font-weight:650}ul{padding-left:20px}li{margin:6px 0}
 footer{margin-top:56px;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line);padding-top:16px}
 a{color:var(--accent)}
 </style></head><body><main>
-<h1>Predicting the weekly natural gas storage report</h1>
-<p class=lede>Every Thursday the US Energy Information Administration reports how much natural gas went into
-or out of storage the week before, and gas prices move on any surprise. This project predicts that number
-from weather before it is released, and tests every prediction honestly: each week is forecast using only
-data that existed before its release.</p>
+<h1>Predicting the weekly US natural gas storage number</h1>
+<p class=lede>Every Thursday, the US Energy Information Administration (EIA) reports how much natural gas was
+added to or taken out of underground storage the week before. Gas prices jump when the number surprises traders.
+This project predicts the number from the weather before EIA publishes it.</p>
+<p class=muted><b>Bcf</b> = billion cubic feet of gas. A positive number means gas was added to storage (usually spring
+to autumn); a negative number means gas was taken out (usually winter). The <b>standard guess</b> is the average for
+the same week over the past five years: the number every storage report is compared with.</p>
+<h2>This week's prediction</h2><div class=now><div class=big>83 Bcf added to storage</div><p>Prediction for the week ending <b>Friday, October 30</b>. EIA publishes the real number on <b>Thursday, November 5 at 10:30 a.m. ET</b>.</p><p class=muted>Likely range: +77 to +107 Bcf. The standard guess (5-year average) is +70 Bcf.</p><div class=big>80 Bcf added to storage</div><p>Prediction for the week ending <b>Friday, November 6</b>. EIA publishes the real number on <b>Thursday, November 12 at 10:30 a.m. ET</b>.</p><p class=muted>Likely range: +74 to +103 Bcf. The standard guess (5-year average) is +33 Bcf.</p><p class=muted style='margin:0'>Some of the week's weather is still a forecast, so the real range is a little wider.</p></div>
+<h2>How accurate is it?</h2>
 <div class=tiles>
-<div class=tile><div class=v>13 Bcf</div><div class=l>average weekly miss (Ridge regression)</div></div>
-<div class=tile><div class=v>58%</div><div class=l>smaller miss than the 5-year average (31 Bcf)</div></div>
-<div class=tile><div class=v>86%</div><div class=l>of weeks the direction of the surprise was called right</div></div>
-<div class=tile><div class=v>251</div><div class=l>untouched test weeks, Jan 2022 to Oct 2026</div></div>
+<div class=tile><div class=v>13 Bcf</div><div class=l>typical miss each week</div></div>
+<div class=tile><div class=v>31 Bcf</div><div class=l>typical miss of the standard guess</div></div>
+<div class=tile><div class=v>86%</div><div class=l>of weeks it correctly said whether the real number would beat the standard guess</div></div>
+<div class=tile><div class=v>251</div><div class=l>weeks tested (2022 to 2026), none used to build the model</div></div>
 </div>
-<h2>Latest nowcast</h2><div class=now><p><b>Week ending Fri Oct 30, 2026: +83 Bcf</b> (80% range +77 to +107; 5-year average +70). EIA publishes it Thursday Nov 05 at 10:30 ET.</p><p><b>Week ending Fri Nov 06, 2026: +80 Bcf</b> (80% range +74 to +103; 5-year average +33). EIA publishes it Thursday Nov 12 at 10:30 ET.</p><p style='color:var(--muted);margin:0'>Made before the release. Recent days use forecast weather, so the real range is a little wider.</p></div>
+<p class=muted>Every prediction was made using only data available before that week's report. The model was designed
+using 2018-2021 only, and the scores above come from 2022 onward, so they show how it does on weeks it has never seen.</p>
+
 <h2>How it works</h2>
+<ol>
+<li><b>Measure the weather.</b> Daily temperatures from 17 US cities show how cold or hot each week was. Cold weeks
+count most in the gas-heated North-East and Midwest; hot weeks count most in Texas, the South and California, where
+power plants burn gas for air conditioning.</li>
+<li><b>Start from the standard guess.</b> The average for the same week over the past five years.</li>
+<li><b>Adjust for the weather.</b> A model learns how much colder or hotter than normal weather moves storage away
+from the standard guess, using every past week.</li>
+<li><b>Test it fairly.</b> Each week is predicted using only earlier data, as if it were that Thursday morning.</li>
+</ol>
+
+<h2>Every method compared</h2>
+<p class=muted>Weeks from 2022 onward. "Typical miss" is the average gap between the prediction and the real number.
+"Beat the standard guess" is the share of weeks it was closer than the 5-year average. "Higher or lower right" is how often it
+correctly said whether the real number would come in above or below the standard guess. "Inside likely range" should be about 80%.</p>
+<div class=tablewrap><table><thead><tr><th>Method</th><th>Typical miss (Bcf)</th><th>Beat the standard guess</th>
+<th>Higher or lower right</th><th>Inside likely range</th></tr></thead><tbody><tr class=best><td>My model (ridge regression)</td><td>13.1</td><td>73%</td><td>86%</td><td>80%</td></tr><tr><td>5-year average, adjusted for weather</td><td>18.3</td><td>64%</td><td>80%</td><td>76%</td></tr><tr><td>Gradient-boosted trees</td><td>16.2</td><td>69%</td><td>82%</td><td>73%</td></tr><tr><td>Standard guess (5-year average)</td><td>31.4</td><td>0%</td><td>–</td><td>76%</td></tr><tr><td>Same week last year</td><td>40.1</td><td>39%</td><td>53%</td><td>78%</td></tr><tr><td>Same as last week</td><td>35.2</td><td>46%</td><td>65%</td><td>76%</td></tr></tbody></table></div>
+
+<h2>What I found</h2>
 <ul>
-<li><b>Weather:</b> daily temperatures for 17 US cities become weighted <i>heating degree days</i> (how cold) and
-<i>cooling degree days</i> (how hot) for each Saturday–Friday storage week. Heating weights lean to the gas-heated
-North-East and Midwest; cooling weights lean to Texas, the South and California, where gas power plants run air conditioning.</li>
-<li><b>Benchmarks:</b> the 5-year average for that week (the number every storage report is compared with),
-last year's number, and last week's number.</li>
-<li><b>Models:</b> a weather-adjusted 5-year average that learns only from the last 3 years, a ridge regression,
-and gradient-boosted trees.</li>
-<li><b>Testing:</b> walk-forward. For each week since 2018, models are retrained on earlier weeks only.
-Automated tests check that no input can depend on the number being predicted.</li>
+<li><b>Winter is where weather matters most.</b> From November to March the model misses by 15 Bcf on average;
+the standard guess misses by 54. Cold snaps cause the big swings, and the temperature data catches them.</li>
+<li><b>Summer is harder to beat.</b> From April to October the model misses by 12 Bcf; the standard guess misses by 17. Summer weeks swing less, so the standard guess is already closer, and summer storage also depends on things the model doesn't see, like gas exports and power-plant demand.</li>
+<li><b>Simple beat fancy.</b> A straightforward linear model (ridge regression) beat a more complex one (gradient-boosted trees).</li>
+<li><b>Big misses point to real events.</b> The largest was February 2021, Winter Storm Uri: frozen gas wells cut
+supply, so storage fell much further than the cold alone would suggest.</li>
 </ul>
-<h2>Results, 2022 onward</h2><p class=lede style='font-size:1rem;margin-bottom:12px'>Scored only on years that played no part in choosing the model.</p>
-<div class=tablewrap><table><thead><tr><th>Method</th><th>Avg miss (Bcf)</th><th>Beats 5-yr avg</th>
-<th>Surprise direction right</th><th>80% range covered</th></tr></thead><tbody><tr><td>Weather-adjusted 5-yr avg</td><td>18.3</td><td>64%</td><td>80%</td><td>76%</td></tr><tr class=best><td>Ridge regression</td><td>13.1</td><td>73%</td><td>86%</td><td>80%</td></tr><tr><td>Gradient boosting</td><td>16.2</td><td>69%</td><td>82%</td><td>73%</td></tr><tr><td>5-year average</td><td>31.4</td><td>0%</td><td>–</td><td>76%</td></tr><tr><td>Same week last year</td><td>40.1</td><td>39%</td><td>53%</td><td>78%</td></tr><tr><td>Last week&#x27;s change</td><td>35.2</td><td>46%</td><td>65%</td><td>76%</td></tr></tbody></table></div>
-<h2>What I learned</h2>
-<ul>
-<li><b>Winter is where weather pays off.</b> In November–March the best model misses by 15 Bcf on average,
-against 54 Bcf for the 5-year average. Cold snaps cause most of the big swings, and they show up in the temperature data.</li>
-<li><b>Summer improved the most.</b> In April–October it misses by 12 Bcf against 17 for the 5-year average. Summer was the weak spot of the first version; last week's weather, curvature for extreme heat and season-aware weather effects closed most of the gap.</li>
-<li><b>Honest testing.</b> Every model and feature choice was made looking only at 2018-2021. The numbers above are
-for 2022 onward, which played no part in those choices, so they are a fair estimate of live performance.</li>
-<li><b>Simple beat fancy.</b> A ridge regression beat gradient-boosted trees, both on the years used to choose it and on the later years.</li>
-<li><b>The misses are informative.</b> Weeks the weather cannot explain point to real events.
-The largest was February 2021, Winter Storm Uri, when freezing wells cut production and storage fell far more than cold alone implied.</li>
-</ul>
-<h2>Weeks the weather couldn't explain</h2><ul><li><b>Feb 19, 2021</b>: EIA -338 Bcf vs model -268 (5-yr avg -128).</li><li><b>Jun 11, 2021</b>: EIA +16 Bcf vs model +84 (5-yr avg +89).</li><li><b>Dec 30, 2022</b>: EIA -221 Bcf vs model -170 (5-yr avg -89).</li><li><b>Jan 06, 2023</b>: EIA +11 Bcf vs model -52 (5-yr avg -161).</li><li><b>Oct 13, 2023</b>: EIA +97 Bcf vs model +55 (5-yr avg +87).</li><li><b>Jan 05, 2024</b>: EIA -140 Bcf vs model -98 (5-yr avg -87).</li><li><b>Feb 02, 2024</b>: EIA -75 Bcf vs model -119 (5-yr avg -197).</li></ul>
-<figure><h3>Forecast vs actual, last two years</h3><img src='img/forecast_vs_actual.png' alt='Forecast vs actual, last two years' loading=lazy><figcaption>Each blue point was predicted before EIA released the number. Black dots are what EIA reported.</figcaption></figure><figure><h3>Weather drives the number</h3><img src='img/weather_vs_storage.png' alt='Weather drives the number' loading=lazy><figcaption>Colder winter weeks mean bigger withdrawals; hotter summer weeks mean smaller injections.</figcaption></figure><figure><h3>How far off each method is</h3><img src='img/error_by_model.png' alt='How far off each method is' loading=lazy><figcaption>Average weekly miss in Bcf, winter vs summer. Lower is better.</figcaption></figure><figure><h3>Is it getting worse over time?</h3><img src='img/error_over_time.png' alt='Is it getting worse over time?' loading=lazy><figcaption>Average miss over the previous 26 weeks, for the best model and the 5-year average.</figcaption></figure>
-<footer>Data: EIA weekly working gas in storage (Lower 48) and Open-Meteo temperature archive.
-Built with Python, pandas and scikit-learn · <a href='https://github.com/HughFOD/gas-storage-nowcast'>Code on GitHub</a>.</footer>
+
+<h2>Weeks the weather couldn't explain</h2>
+<p class=muted>Weeks where the model missed far more than usual. These usually come from events the weather can't
+show, like frozen wells, pipeline outages, or EIA reclassifying gas.</p>
+<ul><li><b>Week ending Feb 19, 2021</b>: EIA reported -338 Bcf; the model predicted -268 Bcf.</li><li><b>Week ending Jun 11, 2021</b>: EIA reported +16 Bcf; the model predicted +84 Bcf.</li><li><b>Week ending Dec 30, 2022</b>: EIA reported -221 Bcf; the model predicted -170 Bcf.</li><li><b>Week ending Jan 6, 2023</b>: EIA reported +11 Bcf; the model predicted -52 Bcf.</li><li><b>Week ending Oct 13, 2023</b>: EIA reported +97 Bcf; the model predicted +55 Bcf.</li><li><b>Week ending Jan 5, 2024</b>: EIA reported -140 Bcf; the model predicted -98 Bcf.</li><li><b>Week ending Feb 2, 2024</b>: EIA reported -75 Bcf; the model predicted -119 Bcf.</li></ul>
+
+<h2>Charts</h2>
+<figure><img src='img/forecast_vs_actual.png' alt='Predictions vs. what EIA reported, last two years' loading=lazy><figcaption>Blue line: the model's prediction, made before each report came out. Black dots: the real number. Grey dashes: the standard guess (5-year average). Above zero means gas was added to storage; below zero, taken out.</figcaption></figure><figure><img src='img/weather_vs_storage.png' alt='Cold weeks drain storage; hot weeks slow the refill' loading=lazy><figcaption>Left: in winter, the colder the week, the more gas comes out of storage. Right: in summer, hot weeks mean more gas burned for air conditioning, so less goes into storage.</figcaption></figure><figure><img src='img/error_by_model.png' alt='Typical miss for each method, winter vs. summer' loading=lazy><figcaption>Shorter bars are better. Winter is where the standard guess struggles most.</figcaption></figure><figure><img src='img/error_over_time.png' alt='Typical miss over time' loading=lazy><figcaption>Each point is the average miss over the previous 26 weeks. The model stays well below the standard guess.</figcaption></figure>
+<footer>Updated automatically every day after EIA's report. Data: EIA weekly working gas in storage (Lower 48 states)
+and Open-Meteo temperatures. Built with Python, pandas and scikit-learn · <a href='https://github.com/HughFOD/gas-storage-nowcast'>Code on GitHub</a>.</footer>
 </main></body></html>
