@@ -131,14 +131,22 @@ def charts(df, pred, m, best, out: Path):
     _save(fig, out / "error_over_time.png")
 
 
-def summary(m, best, now, quality, cons, mode, out: Path, last_week):
-    a = m[(m["season"] == "all year")].set_index("model")
+def summary(m, best, now, quality, cons, mode, out: Path, last_week, m_hold=None):
+    """Headline numbers come from the holdout years (2022 on), which played no part in any
+    modelling choice. The full 2018-on table is shown too."""
+    head = m_hold if m_hold is not None and len(m_hold) else m
+    a = head[(head["season"] == "all year")].set_index("model")
     b, avg = a.loc[best], a.loc["5-year average"]
+    full = m[(m["season"] == "all year")].set_index("model")
+    cols = ["MAE (Bcf)", "RMSE (Bcf)", "bias (Bcf)", "beats 5-yr avg (% of weeks)",
+            "surprise direction right (%)", "80% range covered (%)"]
+    period = (f"{config.HOLDOUT_START[:4]} onward, {int(b['weeks'])} weeks the model choices never saw"
+              if head is m_hold else f"{config.TEST_START[:4]} onward, {int(b['weeks'])} weeks")
     lines = [
         f"# Natural gas storage nowcast: results ({mode} data)", "",
-        f"Last EIA week in the data: **{last_week:%Y-%m-%d}**. "
-        f"Test period: {config.TEST_START} onward, {int(b['weeks'])} weeks, every forecast "
-        "made using only information available before that week's release.", "",
+        f"Last EIA week in the data: **{last_week:%Y-%m-%d}**. Every forecast was made using only "
+        "information available before that week's release (walk-forward). The model was chosen "
+        f"on {config.TEST_START[:4]}-{int(config.HOLDOUT_START[:4]) - 1}; the headline is scored on {period}.", "",
         "## Headline", "",
         f"- Best model: **{best}**, average miss **{b['MAE (Bcf)']:.1f} Bcf** a week, "
         f"vs **{avg['MAE (Bcf)']:.1f} Bcf** for the 5-year average "
@@ -147,9 +155,8 @@ def summary(m, best, now, quality, cons, mode, out: Path, last_week):
         f"- Called the direction of the surprise vs the 5-year average correctly in "
         f"**{b['surprise direction right (%)']:.0f}%** of weeks.",
         f"- The 80% range contained the real number **{b['80% range covered (%)']:.0f}%** of the time.",
-        "", "## All methods (whole year)", "",
-        a[["MAE (Bcf)", "RMSE (Bcf)", "bias (Bcf)", "beats 5-yr avg (% of weeks)",
-           "surprise direction right (%)", "80% range covered (%)"]].round(1).to_markdown(), "",
+        "", f"## All methods, {period}", "", a[cols].round(1).to_markdown(), "",
+        f"## All methods, {config.TEST_START[:4]} onward", "", full[cols].round(1).to_markdown(), "",
     ]
     if now is not None and not now.empty:
         lines += ["## Nowcast for weeks EIA hasn't released yet", ""]

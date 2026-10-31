@@ -90,6 +90,9 @@ def fetch_storage(refresh: bool = False) -> pd.DataFrame:
     if df is None and manual.exists():
         df = _tidy(pd.read_csv(manual))
         print(f"  Using your saved file {manual.name}: {len(df)} weeks")
+    if (df is None or df.empty) and cache.exists():
+        print("  !! Couldn't download new storage data; using the last saved copy.\n  " + "\n  ".join(errors))
+        return _tidy(pd.read_csv(cache))
     if df is None or df.empty:
         raise RuntimeError(
             "Couldn't get EIA storage data.\n  " + "\n  ".join(errors) +

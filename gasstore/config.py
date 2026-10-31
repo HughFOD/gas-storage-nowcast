@@ -19,6 +19,7 @@ API_URL = "https://api.eia.gov/v2/natural-gas/stor/wkly/data/"
 # --- Weather ----------------------------------------------------------------
 ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+ARCHIVE_PAUSE = 8.0  # seconds between long archive downloads (stays under the free per-minute limit)
 BASE_F = 65.0  # degree days are measured from 65 °F, the US industry convention
 
 # (lat, lon, heating weight, cooling weight)
@@ -52,6 +53,7 @@ STORAGE_START = "2010-01-01"   # first week of the current EIA weekly series
 WEATHER_START = "2000-01-01"   # earlier, so weather "normals" exist from 2010
 NORMAL_YEARS = 10              # weather normal = average of the previous 10 years
 TEST_START = "2018-01-01"      # walk-forward evaluation starts here
+HOLDOUT_START = "2022-01-01"   # model choices were made on 2018-2021 only; 2022 on is the untouched test
 DRIFT_YEARS = 3                # the weather-adjusted model only learns from recent years
 INTERVAL = 0.80                # prediction interval coverage target
 RANDOM_SEED = 0

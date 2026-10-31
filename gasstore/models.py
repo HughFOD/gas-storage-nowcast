@@ -139,6 +139,8 @@ def nowcast(df: pd.DataFrame, history: pd.DataFrame) -> pd.DataFrame:
             row["chg_lag1"] = prev["change_bcf"]
             row["dev_lag1"] = prev["change_bcf"] - prev["avg5"]
             row["surplus_lag1"] = prev["storage_bcf"] - prev["storage_avg5"]
+            prev2 = work.loc[i - 2]
+            row["dev_lag2"] = prev2["change_bcf"] - prev2["avg5"]
             p = float(np.asarray(model.predict(row))[0])
             work.at[i, "change_bcf"] = p
             work.at[i, "storage_bcf"] = work.at[i - 1, "storage_bcf"] + p

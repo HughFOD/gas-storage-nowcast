@@ -65,6 +65,9 @@ def fetch_daily(end: date | None = None, refresh: bool = False) -> pd.DataFrame:
                 "end_date": archive_end.isoformat(), "daily": "temperature_2m_mean",
                 "temperature_unit": "fahrenheit", "timezone": "auto"})
             frames.append(df.assign(city=city, source="archive"))
+            if (archive_end - start).days > 60:
+                import time
+                time.sleep(config.ARCHIVE_PAUSE)
             # Save after every city, so an interrupted download picks up where it stopped.
             pd.concat(frames, ignore_index=True).dropna(subset=["temp_f"]).to_csv(cache, index=False)
     archive = pd.concat(frames, ignore_index=True).dropna(subset=["temp_f"])

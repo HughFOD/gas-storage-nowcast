@@ -17,7 +17,12 @@ from . import config
 from .storage import add_changes
 
 FEATURES = ["hdd", "cdd", "hdd_dev", "cdd_dev", "avg5", "last_year", "chg_lag1",
-            "dev_lag1", "surplus_lag1", "doy_sin", "doy_cos", "holiday", "trend"]
+            "dev_lag1", "surplus_lag1", "doy_sin", "doy_cos", "holiday", "trend",
+            # Added after the first version (chosen on 2018-2021 only, see README):
+            "hdd_lag1", "cdd_lag1",          # last week's weather (some demand responds with a lag)
+            "hdd_sq", "cdd_sq",              # extreme cold/heat matter more than proportionally
+            "dev_lag2",                      # surprise two weeks ago
+            "hdd_x_season", "cdd_x_season"]  # weather surprises matter differently by time of year
 
 
 def same_week_years_ago(df: pd.DataFrame, col: str, k: int) -> pd.Series:
@@ -76,5 +81,12 @@ def build(storage: pd.DataFrame, weekly_weather: pd.DataFrame) -> pd.DataFrame:
     df["doy_cos"] = np.cos(2 * np.pi * doy / 365.25)
     df["holiday"] = holiday_week(df["week_ending"])
     df["trend"] = (df["week_ending"] - pd.Timestamp("2010-01-01")).dt.days / 365.25
+    df["hdd_lag1"] = df["hdd"].shift(1)
+    df["cdd_lag1"] = df["cdd"].shift(1)
+    df["hdd_sq"] = df["hdd"] ** 2 / 100
+    df["cdd_sq"] = df["cdd"] ** 2 / 100
+    df["dev_lag2"] = (df["change_bcf"] - df["avg5"]).shift(2)
+    df["hdd_x_season"] = df["hdd_dev"] * df["doy_cos"]
+    df["cdd_x_season"] = df["cdd_dev"] * df["doy_cos"]
     df["season"] = np.where(df["week_ending"].dt.month.between(4, 10), "injection", "withdrawal")
     return df[df["week_ending"] >= config.STORAGE_START].reset_index(drop=True)

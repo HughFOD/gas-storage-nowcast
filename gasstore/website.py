@@ -58,18 +58,30 @@ def build(src=None, dest=None) -> str:
     src = src or config.OUTPUT / "real"
     dest = dest or config.ROOT / "docs"
     (dest / "img").mkdir(parents=True, exist_ok=True)
-    m = pd.read_csv(src / "metrics.csv")
+    import json
+    info = json.loads((src / "best.json").read_text()) if (src / "best.json").exists() else {}
+    hold_file = src / "metrics_holdout.csv"
+    m = pd.read_csv(hold_file if hold_file.exists() else src / "metrics.csv")
     pred = pd.read_csv(src / "predictions.csv", parse_dates=["week_ending"])
     q = pd.read_csv(src / "quality.csv", parse_dates=["week_ending"])
     now = pd.read_csv(src / "nowcast.csv", parse_dates=["week_ending"]) if (src / "nowcast.csv").exists() else None
 
     a = m[m["season"] == "all year"].set_index("model")
     from .report import MODEL_NAMES
-    best = a.loc[MODEL_NAMES, "MAE (Bcf)"].idxmin()
+    best = info.get("best") or a.loc[MODEL_NAMES, "MAE (Bcf)"].idxmin()
     b, avg = a.loc[best], a.loc["5-year average"]
     s = m.set_index(["model", "season"])
     win_b, win_a = s.loc[(best, "withdrawal"), "MAE (Bcf)"], s.loc[("5-year average", "withdrawal"), "MAE (Bcf)"]
+    sum_b, sum_a = s.loc[(best, "injection"), "MAE (Bcf)"], s.loc[("5-year average", "injection"), "MAE (Bcf)"]
     first, last = pred["week_ending"].min(), pred["week_ending"].max()
+    hold_from = pd.Timestamp(info.get("holdout_from", config.HOLDOUT_START))
+    chosen_on = info.get("chosen_on", f"{first:%Y}-{hold_from.year - 1}")
+    summer_head = "Summer improved the most." if sum_b < 0.85 * sum_a else "Summer is harder."
+    summer = (f"In April–October it misses by {sum_b:.0f} Bcf against {sum_a:.0f} for the 5-year average. "
+              "Summer was the weak spot of the first version; last week's weather, curvature for extreme heat "
+              "and season-aware weather effects closed most of the gap." if sum_b < 0.85 * sum_a else
+              f"In April–October it misses by {sum_b:.0f} Bcf against {sum_a:.0f} for the 5-year average. "
+              "Summer storage depends on things this model does not see yet: LNG exports, power demand, production.")
 
     for f, *_ in CHARTS:
         shutil.copy(src / f, dest / "img" / f)
@@ -112,7 +124,7 @@ data that existed before its release.</p>
 <div class=tile><div class=v>{b['MAE (Bcf)']:.0f} Bcf</div><div class=l>average weekly miss ({html.escape(best)})</div></div>
 <div class=tile><div class=v>{100 * (1 - b['MAE (Bcf)'] / avg['MAE (Bcf)']):.0f}%</div><div class=l>smaller miss than the 5-year average ({avg['MAE (Bcf)']:.0f} Bcf)</div></div>
 <div class=tile><div class=v>{b['surprise direction right (%)']:.0f}%</div><div class=l>of weeks the direction of the surprise was called right</div></div>
-<div class=tile><div class=v>{int(b['weeks'])}</div><div class=l>weeks tested, {first:%b %Y} to {last:%b %Y}</div></div>
+<div class=tile><div class=v>{int(b['weeks'])}</div><div class=l>untouched test weeks, {hold_from:%b %Y} to {last:%b %Y}</div></div>
 </div>
 {now_html}
 <h2>How it works</h2>
@@ -127,17 +139,17 @@ and gradient-boosted trees.</li>
 <li><b>Testing:</b> walk-forward. For each week since {first:%Y}, models are retrained on earlier weeks only.
 Automated tests check that no input can depend on the number being predicted.</li>
 </ul>
-<h2>Results</h2>
+<h2>Results, {hold_from:%Y} onward</h2><p class=lede style='font-size:1rem;margin-bottom:12px'>Scored only on years that played no part in choosing the model.</p>
 <div class=tablewrap><table><thead><tr><th>Method</th><th>Avg miss (Bcf)</th><th>Beats 5-yr avg</th>
 <th>Surprise direction right</th><th>80% range covered</th></tr></thead><tbody>{rows}</tbody></table></div>
 <h2>What I learned</h2>
 <ul>
 <li><b>Winter is where weather pays off.</b> In November–March the best model misses by {win_b:.0f} Bcf on average,
 against {win_a:.0f} Bcf for the 5-year average. Cold snaps cause most of the big swings, and they show up in the temperature data.</li>
-<li><b>Summer is harder.</b> In April–October the models barely beat the 5-year average. Summer storage depends more on
-things this model does not see yet: LNG exports, power-sector demand, production and pipeline flows.</li>
-<li><b>Simple beat fancy overall.</b> A ridge regression edged out gradient boosting for the whole year, though the
-trees did better in summer.</li>
+<li><b>{summer_head}</b> {summer}</li>
+<li><b>Honest testing.</b> Every model and feature choice was made looking only at {chosen_on}. The numbers above are
+for {hold_from:%Y} onward, which played no part in those choices, so they are a fair estimate of live performance.</li>
+<li><b>Simple beat fancy.</b> A ridge regression beat gradient-boosted trees, both on the years used to choose it and on the later years.</li>
 <li><b>The misses are informative.</b> Weeks the weather cannot explain point to real events.
 The largest was February 2021, Winter Storm Uri, when freezing wells cut production and storage fell far more than cold alone implied.</li>
 </ul>
