@@ -34,18 +34,18 @@ This project predicts the number from the weather before EIA publishes it.</p>
 <div class=explain><h3>What the numbers mean</h3><ul>
 <li><b>Bcf</b> means <b>billion cubic feet</b> of natural gas. One Bcf is enough to heat about 15,000 US homes for a year.
 The whole country uses about 90 Bcf a day.</li>
-<li>US underground storage holds about <b>3,724 Bcf</b> right now (week ending October 23).</li>
+<li>US underground storage holds about <b>3,801 Bcf</b> right now (week ending October 30).</li>
 <li><b>Positive numbers</b> mean gas was <b>added</b> to storage, usually April to October: a normal week is +50 to +100 Bcf.
 <b>Negative numbers</b> mean gas was <b>taken out</b>, usually in winter: a cold week can be −200 Bcf or more.</li>
 <li>The <b>standard guess</b> is the average change for the same week over the past five years. It's the number every storage report is compared with.</li>
 </ul></div>
-<h2>This week's prediction</h2><div class=now><div class=big>83 Bcf added to storage</div><p>Prediction for the week ending <b>Friday, October 30</b>. EIA publishes the real number on <b>Thursday, November 5 at 10:30 a.m. ET</b>.</p><p class=muted>Likely range: +77 to +107 Bcf. The standard guess (5-year average) is +70 Bcf.</p><p class=muted style='margin:0'>Some of the week's weather is still a forecast, so the real range is a little wider.</p></div>
+<h2>This week's prediction</h2><div class=now><div class=big>72 Bcf added to storage</div><p>Prediction for the week ending <b>Friday, November 6</b>. EIA publishes the real number on <b>Thursday, November 12 at 10:30 a.m. ET</b>.</p><p class=muted>Likely range: +65 to +95 Bcf. The standard guess (5-year average) is +33 Bcf.</p><p class=muted style='margin:0'>Some of the week's weather is still a forecast, so the real range is a little wider.</p></div>
 <h2>How accurate is it?</h2>
 <div class=tiles>
 <div class=tile><div class=v>13 Bcf</div><div class=l>typical miss each week</div></div>
 <div class=tile><div class=v>31 Bcf</div><div class=l>typical miss of the standard guess</div></div>
 <div class=tile><div class=v>86%</div><div class=l>of weeks it correctly said whether the real number would beat the standard guess</div></div>
-<div class=tile><div class=v>251</div><div class=l>weeks tested (2022 to 2026), none used to build the model</div></div>
+<div class=tile><div class=v>252</div><div class=l>weeks tested (2022 to 2026), none used to build the model</div></div>
 </div>
 <p class=muted>Every prediction was made using only data available before that week's report. The model was designed
 using 2018-2021 only, and the scores above come from 2022 onward, so they show how it does on weeks it has never seen.</p>
@@ -66,7 +66,7 @@ from the standard guess, using every past week.</li>
 "Beat the standard guess" is the share of weeks it was closer than the 5-year average. "Higher or lower right" is how often it
 correctly said whether the real number would come in above or below the standard guess. "Inside likely range" should be about 80%.</p>
 <div class=tablewrap><table><thead><tr><th>Method</th><th>Typical miss (Bcf)</th><th>Beat the standard guess</th>
-<th>Higher or lower right</th><th>Inside likely range</th></tr></thead><tbody><tr class=best><td>My model (ridge regression)</td><td>13.1</td><td>73%</td><td>86%</td><td>80%</td></tr><tr><td>5-year average, adjusted for weather</td><td>18.3</td><td>64%</td><td>80%</td><td>76%</td></tr><tr><td>Gradient-boosted trees</td><td>16.2</td><td>69%</td><td>82%</td><td>73%</td></tr><tr><td>Standard guess (5-year average)</td><td>31.4</td><td>0%</td><td>–</td><td>76%</td></tr><tr><td>Same week last year</td><td>40.1</td><td>39%</td><td>53%</td><td>78%</td></tr><tr><td>Same as last week</td><td>35.2</td><td>46%</td><td>65%</td><td>76%</td></tr></tbody></table></div>
+<th>Higher or lower right</th><th>Inside likely range</th></tr></thead><tbody><tr class=best><td>My model (ridge regression)</td><td>13.1</td><td>73%</td><td>86%</td><td>80%</td></tr><tr><td>5-year average, adjusted for weather</td><td>18.3</td><td>63%</td><td>80%</td><td>76%</td></tr><tr><td>Gradient-boosted trees</td><td>16.1</td><td>69%</td><td>82%</td><td>73%</td></tr><tr><td>Standard guess (5-year average)</td><td>31.3</td><td>0%</td><td>–</td><td>77%</td></tr><tr><td>Same week last year</td><td>40.2</td><td>39%</td><td>53%</td><td>78%</td></tr><tr><td>Same as last week</td><td>35.1</td><td>46%</td><td>65%</td><td>76%</td></tr></tbody></table></div>
 
 <h2>What I found</h2>
 <ul>

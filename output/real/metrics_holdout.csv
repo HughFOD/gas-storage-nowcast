@@ -1,16 +1,16 @@
 model,season,weeks,MAE (Bcf),RMSE (Bcf),bias (Bcf),beats 5-yr avg (% of weeks),surprise direction right (%),80% range covered (%)
-Weather-adjusted 5-yr avg,all year,251,18.27,23.93,-2.06,63.75,79.72,76.1
-Ridge regression,all year,251,13.1,17.02,-4.34,72.51,86.18,80.48
-Gradient boosting,all year,251,16.18,21.52,-2.81,69.32,82.03,73.31
-5-year average,all year,251,31.37,45.53,0.1,0.0,,76.49
-Same week last year,all year,251,40.15,59.73,0.05,39.04,53.0,77.69
-Last week's change,all year,251,35.22,53.58,-0.44,45.82,64.52,75.7
-Weather-adjusted 5-yr avg,injection,152,16.42,21.04,-3.67,50.66,69.67,80.26
-Ridge regression,injection,152,11.6,15.02,-5.0,63.16,81.15,84.87
-Gradient boosting,injection,152,13.05,16.73,-2.24,61.18,75.41,80.26
-5-year average,injection,152,16.69,21.01,1.32,0.0,,92.76
-Same week last year,injection,152,20.6,25.05,0.27,37.5,54.92,97.37
-Last week's change,injection,152,18.37,23.71,-2.3,45.39,68.03,94.08
+Weather-adjusted 5-yr avg,all year,252,18.29,23.93,-1.96,63.49,79.82,75.79
+Ridge regression,all year,252,13.07,17.0,-4.3,72.62,86.24,80.16
+Gradient boosting,all year,252,16.15,21.48,-2.77,69.05,82.11,73.41
+5-year average,all year,252,31.27,45.44,0.07,0.0,,76.59
+Same week last year,all year,252,40.16,59.68,-0.12,38.89,52.75,77.78
+Last week's change,all year,252,35.1,53.47,-0.43,46.03,64.68,75.79
+Weather-adjusted 5-yr avg,injection,153,16.46,21.06,-3.49,50.33,69.92,79.74
+Ridge regression,injection,153,11.56,14.98,-4.93,63.4,81.3,84.31
+Gradient boosting,injection,153,13.01,16.69,-2.18,60.78,75.61,80.39
+5-year average,injection,153,16.63,20.95,1.27,0.0,,92.81
+Same week last year,injection,153,20.75,25.22,-0.02,37.25,54.47,97.39
+Last week's change,injection,153,18.27,23.64,-2.27,45.75,68.29,94.12
 Weather-adjusted 5-yr avg,withdrawal,99,21.12,27.78,0.41,83.84,92.63,69.7
 Ridge regression,withdrawal,99,15.4,19.71,-3.32,86.87,92.63,73.74
 Gradient boosting,withdrawal,99,20.99,27.28,-3.68,81.82,90.53,62.63
