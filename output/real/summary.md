@@ -33,7 +33,7 @@ Last EIA week in the data: **2026-10-30**. Every forecast was made using only in
 
 ## Nowcast for weeks EIA hasn't released yet
 
-- Week ending **Fri Nov 06, 2026**: **+72 Bcf** (80% range +65 to +95); 5-year average +33 (7 of 7 days use forecast weather, so less certain). EIA releases it Thu Nov 12.
+- Week ending **Fri Nov 06, 2026**: **+73 Bcf** (80% range +67 to +97); 5-year average +33 (6 of 7 days use forecast weather, so less certain). EIA releases it Thu Nov 12.
 
 ## Model vs analyst consensus
 
